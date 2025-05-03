@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 
-class Users extends Controller
+class Users
 {
     //
 
@@ -71,15 +69,34 @@ class Users extends Controller
         $request->validate(['profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048']);
 
         try {
+
             $user = Auth::user();
-            if ($user->profile_image) {
-                Storage::delete('public' . $user->profile_image);
+
+            // Delete old image if it exists
+            if ($user->profile_image && file_exists(public_path($user->profile_image))) {
+                unlink(public_path($user->profile_image));
             }
 
-            $path = $request->file('profile_picture')->store('profile_images', 'public');
+            // Build filename and destination
+            $image = $request->file('profile_picture');
+            $filename = 'profile_' . $user->id . '_' . time() . '.' . $image->getClientOriginalExtension();
+            $destinationPath = public_path('storage/profile_images');
 
-            $user->profile_image = $path;
+            // Ensure the folder exists
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            // Move file
+            $image->move($destinationPath, $filename);
+
+            // Save relative path
+            $user->profile_image = 'storage/profile_images/' . $filename;
             $user->save();
+
+            return response()->json(['message' => 'Profile image updated', 'path' => $user->profile_image], 200);
+
+
 
 
         } catch (\Exception $e) {
