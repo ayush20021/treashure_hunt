@@ -74,8 +74,14 @@ Route::post('/addTreasure',[Treasures::class,'addTreasure'])->name('addTreasure'
 
 Route::get('/getallTreasures',[Treasures::class,'getAllTreasures'])->name('getAllTreasures')->middleware('auth');
 
-Route::get('treasure_details/{id}',[Treasures::class,'treasureDetails'])->name('treasureDetails')->middleware('auth');
+Route::get('treasure_details/{id}',[Treasures::class,'treasureDetails'])->name('treasureDetails');
 
+Route::post('/treasures/{treasure}/vote',[Treasures::class,'treasureVote'])->name('treasureVote')->middleware('auth');
+
+
+Route::post('/report-treasure',[Treasures::class,'reportTreasure'])->name('reportTreasure')->middleware('auth');
+
+Route::get('/treasures', [Treasures::class, 'search']);
 
 
 

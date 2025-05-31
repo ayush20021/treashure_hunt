@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('table_name_here', function (Blueprint $table) {
+        Schema::create('treasure_votes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('treasure_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->enum('vote_type', ['up', 'down']);
             $table->timestamps();
         });
     }
@@ -22,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('table_name_here');
+        Schema::dropIfExists('treasure_votes');
     }
 };

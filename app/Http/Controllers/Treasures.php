@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Treasure;
 use App\Models\TreasureImage;
+use App\Models\TreasureReports;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -65,7 +66,7 @@ class Treasures
 
 
     function getAllTreasures(){
-        $treasures = Treasure::with('images')->get();
+        $treasures = Treasure::with('images')->limit(10)->get();
         $result = [];
 
         foreach ($treasures as $treasure) {
@@ -94,9 +95,7 @@ class Treasures
 
     public function treasureDetails($id)
     {
-//        dd($id);
-       // $treasures = Treasure::with('images')->findOrFail($id);
-        $treasure = Treasure::with('images')->findOrFail($id); // will 404 if not found
+        $treasure = Treasure::with(['images', 'votes'])->findOrFail($id);
 
         $images = $treasure->images->pluck('path')->toArray();
 
@@ -112,14 +111,101 @@ class Treasures
             'added_by' => $treasure->added_by,
             'tips_recommendations' => $treasure->tips_recommendations,
             'images' => $images,
-            'cover_image' => $treasure->images->isNotEmpty()
-                ? $treasure->images->random()->path
-                : null,
+            'cover_image' => $treasure->images->isNotEmpty() ? $treasure->images->random()->path : null,
+            'upvotes' => (int) $treasure->upvotes,
+            'downvotes' => (int) $treasure->downvotes,
+            'user_vote' =>  $treasure->userVoteType()
         ];
+
+       // dd($result);
 
         $treasure = $result;
 
 //        dd($result);
         return view('treasures.details',compact('treasure'));
     }
+
+
+    public function treasureVote(Request $request, Treasure $treasure)
+    {
+        $request->validate([
+            'vote_type' => 'required|in:up,down'
+        ]);
+
+        $existingVote = $treasure->votes()->where('user_id', auth()->id())->first();
+
+        if ($existingVote) {
+            if ($existingVote->vote_type === $request->vote_type) {
+                $existingVote->delete();
+                $message = 'Your vote has been removed.';
+                $currentVote = null;
+            } else {
+                $existingVote->update(['vote_type' => $request->vote_type]);
+                $message = 'Your vote has been updated.';
+                $currentVote = $request->vote_type;
+            }
+        } else {
+            $treasure->votes()->create([
+                'user_id' => auth()->id(),
+                'vote_type' => $request->vote_type
+            ]);
+            $message = 'Thanks for your vote!';
+            $currentVote = $request->vote_type;
+        }
+
+        return response()->json([
+            'success' => true,
+            'upvotes' => $treasure->upvotes,
+            'downvotes' => $treasure->downvotes,
+            'current_vote' => $currentVote,
+            'message' => $message
+        ]);
+    }
+
+    function reportTreasure(Request $request)
+    {
+        $request->validate([
+            'treasure_id' => 'required|exists:treasures,id',
+            'reason' =>'required|string',
+            'details' => 'nullable|string'
+
+        ]);
+
+
+        //dd($request->all());
+
+        $treasure_report = TreasureReports::create([
+            'treasure_id' => $request->treasure_id,
+            'report_reason' =>$request->reason,
+            'additional_details' => $request->details ?? '',
+            'user_id' => auth()->id()
+
+        ]);
+
+        if($treasure_report){
+            return response()->json([
+                'success' => true
+            ]);
+        }else{
+            return response()->json([
+                'success' => false,
+            ]);
+        }
+
+    }
+
+
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+
+        if (empty($query)) {
+            return response()->json([]);
+        }
+
+        $treasures = Treasure::search($query)->take(5)->get()->load('images');
+
+        return response()->json($treasures);
+    }
+
 }

@@ -12,13 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('treasures', function (Blueprint $table) {
-            // Add new columns
-            $table->string('latitude')->nullable();
-            $table->string('longitude')->nullable();
-
-            // Modify existing columns
-            $table->string('image')->default('')->change();
-            $table->string('tips_recommendations')->default('')->change();
+            //
         });
     }
 

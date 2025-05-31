@@ -429,6 +429,69 @@
                 width: 100%;
             }
         }
+
+        /* Updated search section styles */
+        .search-section {
+            margin: 0 5% 30px;
+            position: relative;
+        }
+
+        .search-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 15px 25px 15px 60px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.1rem;
+            font-family: 'Poppins', sans-serif;
+            background: white;
+            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.15);
+            transition: all 0.3s ease;
+            color: var(--dark);
+        }
+
+        .search-bar:focus {
+            outline: none;
+            box-shadow: 0 8px 30px rgba(108, 92, 231, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .search-tags {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .search-tag {
+            background: rgba(108, 92, 231, 0.1);
+            color: var(--primary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-tag:hover {
+            background: var(--primary);
+            color: white;
+            t
     </style>
 </head>
 <body>
@@ -457,6 +520,26 @@
     <!-- Treasures in Your Area - Card Grid Layout -->
     <div class="location-section">
         <h3><i class="fas fa-map-marked-alt"></i> Treasures in Your Area</h3>
+
+        <div class="search-section">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-bar" placeholder="Search by name, location or category..." id="searchInput">
+            </div>
+            <div class="search-tags">
+                <div class="search-tag" data-filter="popular">Popular</div>
+                <div class="search-tag" data-filter="cultural">Cultural</div>
+                <div class="search-tag" data-filter="scenic">Scenic</div>
+                <div class="search-tag" data-filter="historic">Historic</div>
+                <div class="search-tag" data-filter="restaurant">Restaurants</div>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div class="treasure-grid" id="treasureGrid">
+            <!-- Default Sample Data -->
+
+        </div>
         <div class="treasure-grid">
 
 
@@ -539,6 +622,92 @@
             alert('Could not open directions. Please try again later.');
         }
     }
+
+
+
+    // Search functionality
+    // Initialize with default treasures
+    //fetchAndRenderTreasures();
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', debounce(function(e) {
+        fetchAndRenderTreasures(e.target.value);
+    }, 300));
+
+    function renderResults(treasures) {
+        const grid = document.getElementById('treasureGrid');
+        grid.innerHTML = ''; // Clear previous results
+
+        treasures.forEach(treasure => {
+            const card = document.createElement('div');
+            card.classList.add('treasure-card');
+
+            // Use the original structure that matches your CSS
+            card.innerHTML = `
+            <div class="treasure-image-container">
+                ${treasure.images.length > 0
+                ? `<img src="${treasure.images[0].path}" class="treasure-image" alt="${treasure.name}">`
+                : `<div class="no-image">No Image Available</div>`}
+                <span class="treasure-tag">${treasure.category || 'Uncategorized'}</span>
+            </div>
+            <div class="treasure-details">
+                <h4>${treasure.name}</h4>
+                <div class="treasure-location">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>${treasure.location}</span>
+                </div>
+                <div class="stars">
+                    ${'★'.repeat(Math.round(treasure.rating))}${'☆'.repeat(5 - Math.round(treasure.rating))}
+                </div>
+                <div class="treasure-actions">
+                    <button class="action-btn directions-btn" onclick="openDirections(${treasure.latitude}, ${treasure.longitude})">
+                        <i class="fas fa-directions"></i> Directions
+                    </button>
+                    <button class="action-btn details-btn" onclick="window.location.href='/treasures/${treasure.id}'">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
+            </div>
+        `;
+
+            grid.appendChild(card);
+        });
+
+        // If no results, show message
+        if (treasures.length === 0) {
+            grid.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-map-marked-alt"></i>
+                <p>No treasures found matching your search</p>
+            </div>
+        `;
+        }
+    }
+
+
+    async function fetchAndRenderTreasures(searchQuery = '') {
+        console.log(searchQuery)
+        try {
+            const response = await fetch(`/treasures?q=${encodeURIComponent(searchQuery)}`);
+            const treasures = await response.json();
+            renderResults(treasures);
+        } catch (error) {
+            console.error("Search failed:", error);
+            document.getElementById('treasureGrid').innerHTML = `
+            <div class="error">Failed to load results. Please try again.</div>
+        `;
+        }
+    }
+
+    // Utility: Prevent rapid API calls
+    function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), timeout);
+        };
+    }
+
 </script>
 </body>
 </html>

@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('treasure_images', function (Blueprint $table) {
+        Schema::create('treasure_reports', function (Blueprint $table) {
             $table->id();
             $table->foreignId('treasure_id')->constrained()->onDelete('cascade');
-            $table->string('path');
+            $table->string('report_reason');
+            $table->string('additional_details')->default('');
+            $table->integer('user_id');
             $table->timestamps();
         });
     }
@@ -24,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('treasure_images');
+        Schema::dropIfExists('treasure_reports');
     }
 };
